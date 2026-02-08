@@ -18,12 +18,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Godot
-      uses: chickensoft-games/setup-godot@v1
-      with:
-        version: 4.2.2
-        use-dotnet: false
-
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
@@ -36,55 +30,99 @@ jobs:
     - name: Setup Android Keystore
       run: |
         mkdir -p ~/.android
-        # 生成调试密钥库
         keytool -keyalg RSA -genkeypair -alias androiddebugkey \
           -keypass android -keystore ~/.android/debug.keystore \
           -storepass android -dname "CN=Android Debug,O=Android,C=US" \
           -validity 9999
+        echo "Debug keystore created at ~/.android/debug.keystore"
+
+    - name: Download and Setup Godot
+      run: |
+        # Download Godot 4.2.2
+        wget -q https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_linux.x86_64.zip
+        unzip -o Godot_v4.2.2-stable_linux.x86_64.zip
+        chmod +x Godot_v4.2.2-stable_linux.x86_64
+        sudo mv Godot_v4.2.2-stable_linux.x86_64 /usr/local/bin/godot
+        
+        # Verify Godot installation
+        godot --version
 
     - name: Download Godot Android Export Templates
       run: |
         mkdir -p ~/.local/share/godot/export_templates/4.2.2.stable
         cd ~/.local/share/godot/export_templates/4.2.2.stable
-        # 下载并解压导出模板
+        
+        # Download export templates
         wget -q https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_export_templates.tpz
-        unzip -o Godot_v4.2.2-stable_export_templates.tpz 2>/dev/null || true
-        # tpz文件其实就是zip格式
-        mv templates/* . 2>/dev/null || true
+        
+        # Extract (tpz is just a zip file)
+        unzip -o Godot_v4.2.2-stable_export_templates.tpz || true
+        
+        # If templates folder exists, move contents up
+        if [ -d "templates" ]; then
+          mv templates/* . 2>/dev/null || true
+        fi
+        
+        # List what we have
+        echo "Export templates directory contents:"
+        ls -la ~/.local/share/godot/export_templates/4.2.2.stable/
+
+    - name: Update Export Preset with Keystore
+      run: |
+        # Update export_presets.cfg to use the debug keystore
+        sed -i 's|keystore/debug=""|keystore/debug="/home/runner/.android/debug.keystore"|g' export_presets.cfg
+        sed -i 's|keystore/release=""|keystore/release="/home/runner/.android/debug.keystore"|g' export_presets.cfg
+        
+        # Also add keystore password if not present
+        if ! grep -q "keystore/debug_password" export_presets.cfg; then
+          sed -i '/keystore/debug=/a keystore/debug_password="android"' export_presets.cfg
+        fi
+        
+        echo "Updated export_presets.cfg:"
+        cat export_presets.cfg
 
     - name: Build Android APK
       run: |
         mkdir -p build/android
-        # 使用Godot命令行导出APK
-        godot --headless --path . --export-release "Android" build/android/biwei_treasure_hunt.apk
-        # 如果导出失败，尝试调试模式
-        if [ ! -f "build/android/biwei_treasure_hunt.apk" ]; then
-          echo "尝试使用调试模式导出..."
-          godot --headless --path . --export-debug "Android" build/android/biwei_treasure_hunt.apk
-        fi
+        
+        # Try to build with verbose output
+        echo "Starting Godot export..."
+        godot --headless --verbose --path . --export-debug "Android" build/android/biwei_treasure_hunt.apk 2>&1 || {
+          echo "Export failed, checking Godot configuration..."
+          godot --headless --verbose --path . --editor --quit 2>&1 | head -50
+          exit 1
+        }
 
     - name: Verify Build
       run: |
+        echo "Build directory contents:"
         ls -la build/android/
+        
         if [ -f "build/android/biwei_treasure_hunt.apk" ]; then
           echo "✅ APK构建成功！"
           ls -lh build/android/biwei_treasure_hunt.apk
+          file build/android/biwei_treasure_hunt.apk
         else
-          echo "❌ APK构建失败"
+          echo "❌ APK构建失败 - 文件不存在"
+          echo "Searching for any .apk files..."
+          find . -name "*.apk" -type f 2>/dev/null
           exit 1
         fi
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
+      if: success()
       with:
         name: biwei-treasure-hunt-apk
         path: build/android/*.apk
         if-no-files-found: error
 
     - name: Summary
+      if: success()
       run: |
         echo "===== 必维摸金 构建完成 ====="
         echo "项目: 必维摸金"
         echo "版本: v0.1.0 单机测试版"
         echo "状态: ✅ 构建成功"
+        echo "APK路径: build/android/biwei_treasure_hunt.apk"
         echo "============================"
