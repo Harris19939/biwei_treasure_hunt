@@ -70,13 +70,10 @@ jobs:
     - name: Update Export Preset with Keystore
       run: |
         # Update export_presets.cfg to use the debug keystore
-        sed -i 's|keystore/debug=""|keystore/debug="/home/runner/.android/debug.keystore"|g' export_presets.cfg
-        sed -i 's|keystore/release=""|keystore/release="/home/runner/.android/debug.keystore"|g' export_presets.cfg
-        
-        # Also add keystore password if not present
-        if ! grep -q "keystore/debug_password" export_presets.cfg; then
-          sed -i '/keystore/debug=/a keystore/debug_password="android"' export_presets.cfg
-        fi
+        # 使用正确的GitHub Actions路径
+        KEYSTORE_PATH="$HOME/.android/debug.keystore"
+        sed -i "s|keystore/debug=\"\"|keystore/debug=\"$KEYSTORE_PATH\"|g" export_presets.cfg
+        sed -i "s|keystore/release=\"\"|keystore/release=\"$KEYSTORE_PATH\"|g" export_presets.cfg
         
         echo "Updated export_presets.cfg:"
         cat export_presets.cfg
