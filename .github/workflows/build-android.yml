@@ -197,6 +197,29 @@ jobs:
         path: build/android/*.apk
         if-no-files-found: error
 
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      if: success()
+      with:
+        files: build/android/*.apk
+        tag_name: v0.1.0
+        name: 必维摸金 v0.1.0
+        body: |
+          ## 必维摸金 - Android 测试版
+
+          ### 安装说明
+          1. 下载下方 APK 文件
+          2. 传输到安卓手机
+          3. 点击安装（需允许未知来源）
+
+          ### 更新日志
+          - 初始测试版本
+          - Godot 4.2.2 构建
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Summary
       if: success()
       run: |
