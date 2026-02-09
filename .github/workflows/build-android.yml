@@ -38,57 +38,140 @@ jobs:
 
     - name: Download and Setup Godot
       run: |
-        # Download Godot 4.2.2
-        wget -q https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_linux.x86_64.zip
-        unzip -o Godot_v4.2.2-stable_linux.x86_64.zip
-        chmod +x Godot_v4.2.2-stable_linux.x86_64
-        sudo mv Godot_v4.2.2-stable_linux.x86_64 /usr/local/bin/godot
+        set -x  # 启用调试输出
         
-        # Verify Godot installation
+        # 检查是否已安装
+        if command -v godot &> /dev/null; then
+          echo "Godot already installed:"
+          godot --version
+          exit 0
+        fi
+        
+        # Godot 4.2.2 下载URL (使用GitHub官方CDN)
+        GODOT_URL="https://github.com/godotengine/godot/releases/download/4.2.2-stable/Godot_v4.2.2-stable_linux.x86_64.zip"
+        TEMP_ZIP="/tmp/godot.zip"
+        
+        echo "Downloading Godot 4.2.2 from GitHub releases..."
+        echo "URL: $GODOT_URL"
+        
+        # 下载Godot (带详细错误输出)
+        if ! curl -L -o "$TEMP_ZIP" "$GODOT_URL" 2>&1; then
+          echo "❌ 下载Godot失败!"
+          curl -L -o "$TEMP_ZIP" "$GODOT_URL" --verbose
+          exit 1
+        fi
+        
+        echo "Download complete, file size: $(ls -lh $TEMP_ZIP | awk '{print $5}')"
+        
+        # 解压
+        unzip -o "$TEMP_ZIP" -d /tmp/
+        chmod +x /tmp/Godot_v4.2.2-stable_linux.x86_64
+        sudo mv /tmp/Godot_v4.2.2-stable_linux.x86_64 /usr/local/bin/godot
+        
+        # 验证安装
         godot --version
 
     - name: Download Godot Android Export Templates
       run: |
-        mkdir -p ~/.local/share/godot/export_templates/4.2.2.stable
-        cd ~/.local/share/godot/export_templates/4.2.2.stable
+        set -x
         
-        # Download export templates
-        wget -q https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_export_templates.tpz
+        TEMPLATES_DIR="$HOME/.local/share/godot/export_templates/4.2.2.stable"
+        mkdir -p "$TEMPLATES_DIR"
+        cd "$TEMPLATES_DIR"
         
-        # Extract (tpz is just a zip file)
-        unzip -o Godot_v4.2.2-stable_export_templates.tpz || true
+        # 使用GitHub官方CDN下载模板
+        TEMPLATES_URL="https://github.com/godotengine/godot/releases/download/4.2.2-stable/Godot_v4.2.2-stable_export_templates.tpz"
+        TEMP_TEMPLATES="/tmp/templates.zip"
         
-        # If templates folder exists, move contents up
-        if [ -d "templates" ]; then
-          mv templates/* . 2>/dev/null || true
+        echo "Downloading Godot Android export templates..."
+        echo "URL: $TEMPLATES_URL"
+        
+        # 下载模板 (带重试)
+        for i in 1 2 3; do
+          echo "Attempt $i..."
+          if curl -L -o "$TEMP_TEMPLATES" "$TEMPLATES_URL" 2>&1; then
+            echo "Download successful!"
+            break
+          fi
+          echo "Retry in 5 seconds..."
+          sleep 5
+        done
+        
+        if [ ! -s "$TEMP_TEMPLATES" ]; then
+          echo "❌ 下载模板失败!"
+          ls -la "$TEMP_TEMPLATES" 2>/dev/null || echo "File does not exist"
+          exit 1
         fi
         
-        # List what we have
+        echo "Templates download complete, file size: $(ls -lh $TEMP_TEMPLATES | awk '{print $5}')"
+        
+        # 解压 (tpz本质是zip)
+        unzip -o "$TEMP_TEMPLATES"
+        
+        # 清理并设置正确的目录结构
+        rm -f "$TEMP_TEMPLATES"
+        
+        # 如果有templates文件夹，移动内容到根目录
+        if [ -d "templates" ]; then
+          mv templates/* . 2>/dev/null || true
+          rmdir templates 2>/dev/null || true
+        fi
+        
+        # 列出内容确认
         echo "Export templates directory contents:"
-        ls -la ~/.local/share/godot/export_templates/4.2.2.stable/
+        ls -la "$TEMPLATES_DIR/"
 
     - name: Update Export Preset with Keystore
       run: |
         # Update export_presets.cfg to use the debug keystore
-        # 使用正确的GitHub Actions路径
         KEYSTORE_PATH="$HOME/.android/debug.keystore"
-        sed -i "s|keystore/debug=\"\"|keystore/debug=\"$KEYSTORE_PATH\"|g" export_presets.cfg
-        sed -i "s|keystore/release=\"\"|keystore/release=\"$KEYSTORE_PATH\"|g" export_presets.cfg
+        echo "Keystore path: $KEYSTORE_PATH"
+        
+        # 更新debug keystore路径
+        if grep -q 'keystore/debug=""' export_presets.cfg; then
+          sed -i "s|keystore/debug=\"\"|keystore/debug=\"$KEYSTORE_PATH\"|g" export_presets.cfg
+          echo "Updated debug keystore path"
+        else
+          echo "Debug keystore already configured or pattern not found"
+        fi
+        
+        # 更新release keystore路径
+        if grep -q 'keystore/release=""' export_presets.cfg; then
+          sed -i "s|keystore/release=\"\"|keystore/release=\"$KEYSTORE_PATH\"|g" export_presets.cfg
+          echo "Updated release keystore path"
+        fi
         
         echo "Updated export_presets.cfg:"
         cat export_presets.cfg
 
     - name: Build Android APK
       run: |
+        set -x
+        
         mkdir -p build/android
         
-        # Try to build with verbose output
         echo "Starting Godot export..."
-        godot --headless --verbose --path . --export-debug "Android" build/android/biwei_treasure_hunt.apk 2>&1 || {
-          echo "Export failed, checking Godot configuration..."
-          godot --headless --verbose --path . --editor --quit 2>&1 | head -50
-          exit 1
-        }
+        echo "Godot version: $(godot --version)"
+        
+        # 检查export_templates是否存在
+        TEMPLATES_DIR="$HOME/.local/share/godot/export_templates/4.2.2.stable"
+        echo "Checking templates at: $TEMPLATES_DIR"
+        ls -la "$TEMPLATES_DIR" || echo "Templates directory not found!"
+        
+        # 执行导出 (使用export-release而不是export-debug以避免签名问题)
+        if godot --headless --verbose --path . --export-release "Android" build/android/biwei_treasure_hunt.apk 2>&1; then
+          echo "✅ APK构建成功!"
+        else
+          echo "❌ 导出失败，尝试使用export-debug..."
+          godot --headless --verbose --path . --export-debug "Android" build/android/biwei_treasure_hunt.apk 2>&1
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "Export failed with exit code: $EXIT_CODE"
+            echo "Checking Godot configuration..."
+            ls -la ~/.local/share/godot/export_templates/4.2.2.stable/
+            exit $EXIT_CODE
+          fi
+        fi
 
     - name: Verify Build
       run: |
@@ -96,7 +179,7 @@ jobs:
         ls -la build/android/
         
         if [ -f "build/android/biwei_treasure_hunt.apk" ]; then
-          echo "✅ APK构建成功！"
+          echo "✅ APK构建成功!"
           ls -lh build/android/biwei_treasure_hunt.apk
           file build/android/biwei_treasure_hunt.apk
         else
