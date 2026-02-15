@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://game_world_001"]
+[gd_scene load_steps=3 format=3 uid="uid://game_world_001"]
 
 [ext_resource type="Script" path="res://scripts/game_world.gd" id="1_game_world"]
+[ext_resource type="PackedScene" uid="uid://touch_controls" path="res://scenes/touch_controls.tscn" id="2_touch_controls"]
 
 [node name="GameWorld" type="Node3D"]
 script = ExtResource("1_game_world")
@@ -82,3 +83,5 @@ size = Vector3(100, 1, 100)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
 size = Vector3(100, 1, 100)
+
+[node name="TouchControls" parent="." instance=ExtResource("2_touch_controls")]

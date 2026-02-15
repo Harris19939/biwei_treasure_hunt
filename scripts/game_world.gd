@@ -42,6 +42,12 @@ func spawn_local_player():
 	
 	players_node.add_child(player)
 	print("[GameWorld] 本地玩家生成完成:", player.player_id)
+	
+	# 连接触摸控制到玩家
+	var touch_controls = $TouchControls
+	if touch_controls:
+		touch_controls.connect_player(player)
+		print("[GameWorld] 触摸控制已连接")
 
 func _on_player_connected(id: int):
 	print("[GameWorld] 新玩家连接:", id)

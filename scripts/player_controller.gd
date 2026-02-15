@@ -16,10 +16,24 @@ var inventory: Inventory = Inventory.new()
 var health: int = 100
 var is_local_player: bool = false
 
+# 触摸输入状态
+var touch_move_input: Vector2 = Vector2.ZERO
+var touch_jump_pressed: bool = false
+var touch_interact_pressed: bool = false
+var touch_jump_was_pressed: bool = false
+var touch_interact_was_pressed: bool = false
+# 是否使用触摸模式
+var use_touch_controls: bool = false
+
 func _ready():
 	if is_local_player:
 		camera.current = true
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		# 检测是否为触屏设备
+		use_touch_controls = DisplayServer.is_touchscreen_available()
+		if use_touch_controls:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		else:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		GameManager.register_player(player_id, self)
 
 func _physics_process(delta):
@@ -30,8 +44,14 @@ func _physics_process(delta):
 	_move_and_sync()
 
 func _handle_movement(delta):
-	# 获取输入
-	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	# 获取键盘输入
+	var keyboard_input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	
+	# 合并触摸和键盘输入
+	var input_dir = keyboard_input_dir
+	if use_touch_controls and touch_move_input != Vector2.ZERO:
+		input_dir = touch_move_input
+	
 	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	
 	# 地面移动
@@ -46,9 +66,14 @@ func _handle_movement(delta):
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 	
-	# 跳跃
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	# 跳跃 (键盘或触摸)
+	var jump_pressed = Input.is_action_just_pressed("jump") or (touch_jump_pressed and not touch_jump_was_pressed)
+	if jump_pressed and is_on_floor():
 		velocity.y = jump_velocity
+	
+	# 更新触摸状态
+	touch_jump_was_pressed = touch_jump_pressed
+	touch_interact_was_pressed = touch_interact_pressed
 
 func _move_and_sync():
 	move_and_slide()
@@ -57,7 +82,9 @@ func _move_and_sync():
 		sync_position.rpc(global_position, rotation)
 
 func _handle_interaction():
-	if Input.is_action_just_pressed("interact"):
+	# 键盘或触摸交互
+	var interact_pressed = Input.is_action_just_pressed("interact") or (touch_interact_pressed and not touch_interact_was_pressed)
+	if interact_pressed:
 		if interaction_ray.is_colliding():
 			var target = interaction_ray.get_collider()
 			if target.has_method("interact"):
@@ -67,10 +94,28 @@ func _input(event):
 	if not is_local_player:
 		return
 	
-	if event is InputEventMouseMotion:
-		rotate_y(-event.relative.x * mouse_sensitivity)
-		camera.rotate_x(-event.relative.y * mouse_sensitivity)
-		camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
+	# 触摸模式不处理鼠标视角
+	if not use_touch_controls:
+		if event is InputEventMouseMotion:
+			rotate_y(-event.relative.x * mouse_sensitivity)
+			camera.rotate_x(-event.relative.y * mouse_sensitivity)
+			camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
+
+# 设置触摸输入 (从 TouchControlsManager 调用)
+func set_touch_input(action: String, value):
+	match action:
+		"move":
+			touch_move_input = value
+		"jump":
+			touch_jump_pressed = value
+		"interact":
+			touch_interact_pressed = value
+
+# 处理触摸视角旋转
+func handle_touch_camera(horizontal: float, vertical: float):
+	rotate_y(horizontal)
+	camera.rotate_x(vertical)
+	camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
 
 @rpc("unreliable")
 func sync_position(pos: Vector3, rot: Vector3):
