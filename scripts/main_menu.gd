@@ -64,39 +64,9 @@ func _on_join_pressed():
 	status_label.text = "多人模式开发中..."
 
 func _on_settings_pressed():
-	# 显示设置信息
-	status_label.text = "设置功能开发中..."
+	# 显示设置信息 - 简化版本，避免PopupPanel创建失败
+	status_label.text = "设置: 音量100% 画质高"
 	print("[MainMenu] 点击了设置按钮")
-	
-	# 创建设置弹窗
-	var popup = PopupPanel.new()
-	popup.set_size(Vector2(400, 300))
-	add_child(popup)
-	popup.popup_centered()
-	
-	var vbox = VBoxContainer.new()
-	popup.add_child(vbox)
-	
-	var title = Label.new()
-	title.text = "游戏设置"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
-	vbox.add_child(title)
-	
-	var volume_label = Label.new()
-	volume_label.text = "音量: 100%"
-	volume_label.add_theme_font_size_override("font_size", 24)
-	vbox.add_child(volume_label)
-	
-	var quality_label = Label.new()
-	quality_label.text = "画质: 高"
-	quality_label.add_theme_font_size_override("font_size", 24)
-	vbox.add_child(quality_label)
-	
-	var close_btn = Button.new()
-	close_btn.text = "关闭"
-	close_btn.pressed.connect(func(): popup.hide())
-	vbox.add_child(close_btn)
 
 func _on_quit_pressed():
 	get_tree().quit()
