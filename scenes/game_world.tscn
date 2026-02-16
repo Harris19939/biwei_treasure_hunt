@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://game_world_001"]
+[gd_scene load_steps=6 format=3 uid="uid://game_world_001"]
 
 [ext_resource type="Script" path="res://scripts/game_world.gd" id="1_game_world"]
 [ext_resource type="PackedScene" uid="uid://touch_controls" path="res://scenes/touch_controls.tscn" id="2_touch_controls"]
@@ -8,6 +8,14 @@ size = Vector3(100, 1, 100)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
 size = Vector3(100, 1, 100)
+
+[sub_resource type="Environment" id="Environment_default"]
+background_mode = 1
+ambient_light_source = 2
+ambient_light_color = Color(0.5, 0.5, 0.5, 1)
+ambient_light_energy = 0.5
+tonemap_mode = 2
+glow_enabled = true
 
 [node name="GameWorld" type="Node3D"]
 script = ExtResource("1_game_world")
@@ -27,6 +35,7 @@ transform = Transform3D(1, 0, 0, 0, -0.707107, 0.707107, 0, -0.707107, -0.707107
 shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Environment"]
+environment = SubResource("Environment_default")
 
 [node name="Players" type="Node3D" parent="."]
 
