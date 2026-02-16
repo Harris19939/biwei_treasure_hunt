@@ -30,45 +30,29 @@ func _ready():
 	settings_button.focus_mode = Control.FOCUS_ALL
 	quit_button.focus_mode = Control.FOCUS_ALL
 	
-	print("[MainMenu] 初始化完成")
-
-func _input(event):
-	# 处理触摸事件，确保按钮在触屏上能正常工作
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			# 检查是否点击了按钮区域
-			_check_button_touch(event.position)
-	elif event is InputEventMouseButton:
-		# 处理鼠标点击
-		if event.pressed:
-			_check_button_touch(event.position)
-
-func _check_button_touch(screen_pos: Vector2):
-	# 通过检查按钮的全局矩形
-	var host_rect = _get_button_global_rect(host_button)
-	var settings_rect = _get_button_global_rect(settings_button)
-	var quit_rect = _get_button_global_rect(quit_button)
+	# 禁用鼠标捕获，让触屏点击正常工作
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	
-	if host_rect.has_point(screen_pos):
-		_on_host_pressed()
-	elif settings_rect.has_point(screen_pos):
-		_on_settings_pressed()
-	elif quit_rect.has_point(screen_pos):
-		_on_quit_pressed()
-
-func _get_button_global_rect(button: Button) -> Rect2:
-	var global_pos = button.get_global_position()
-	return Rect2(global_pos, button.size)
+	print("[MainMenu] 初始化完成")
 
 func _on_host_pressed():
 	# 单机版：直接进入游戏，无需联网
 	status_label.text = "正在启动游戏..."
 	print("[MainMenu] 点击了单机游戏按钮")
 	
-	# 延迟一小段时间后切换场景，让UI先更新
-	await get_tree().create_timer(0.1).timeout
+	# 直接切换场景
+	_change_to_game_world()
+
+func _change_to_game_world():
+	var scene_path = "res://scenes/game_world.tscn"
 	
-	var error = get_tree().change_scene_to_file("res://scenes/game_world.tscn")
+	# 检查文件是否存在
+	if not ResourceLoader.exists(scene_path):
+		status_label.text = "错误: 游戏场景不存在!"
+		print("[MainMenu] 场景文件不存在:", scene_path)
+		return
+	
+	var error = get_tree().change_scene_to_file(scene_path)
 	if error != OK:
 		status_label.text = "启动失败! 错误码: " + str(error)
 		print("[MainMenu] 场景切换失败，错误码:", error)
