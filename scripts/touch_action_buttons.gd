@@ -31,10 +31,43 @@ var pressed_color := Color(0.3, 0.8, 0.3, 0.6)
 var interact_color := Color(0.8, 0.6, 0.3, 0.6)
 var border_color := Color(1, 1, 1, 0.5)
 
+# 是否已初始化
+var initialized: bool = false
+
 func _ready():
-	custom_minimum_size = Vector2(200, 200)
-	# 位置在右下角
-	position = Vector2(-220, -220)
+	# 设置控件大小为全屏，用于接收触摸事件
+	custom_minimum_size = Vector2(400, 400)
+	# 锚点设为右下
+	anchors_preset = Control.PRESET_BOTTOM_RIGHT
+	# 偏移设置
+	offset_left = -400
+	offset_top = -400
+	offset_right = 0
+	offset_bottom = 0
+
+func _process(_delta):
+	# 计算按钮区域 (相对于右下角)
+	var screen_size = get_viewport().get_visible_rect().size
+	var right = screen_size.x - 20
+	var bottom = screen_size.y - 20
+	
+	# 跳跃按钮在右下角左侧
+	jump_area = Rect2(
+		right - button_size.x * 2 - button_spacing - 100,
+		bottom - button_size.y,
+		button_size.x,
+		button_size.y
+	)
+	
+	# 交互按钮在跳跃按钮上方
+	interact_area = Rect2(
+		right - button_size.x * 2 - button_spacing - 100,
+		bottom - button_size.y * 2 - button_spacing,
+		button_size.x,
+		button_size.y
+	)
+	
+	queue_redraw()
 
 func _draw():
 	# 绘制跳跃按钮
@@ -54,16 +87,16 @@ func _gui_input(event):
 		if event.pressed:
 			var touch_pos = event.position
 			
-			# 检查跳跃按钮
-			if jump_area.has_point(touch_pos) and jump_touch_index == -1:
-				jump_touch_index = event.index
-				jump_pressed = true
-				queue_redraw()
-			# 检查交互按钮
-			elif interact_area.has_point(touch_pos) and interact_touch_index == -1:
-				interact_touch_index = event.index
-				interact_pressed = true
-				queue_redraw()
+			# 检查跳跃按钮 (右侧区域)
+			if touch_pos.x > get_viewport().get_visible_rect().size.x - 300:
+				if jump_area.has_point(touch_pos) and jump_touch_index == -1:
+					jump_touch_index = event.index
+					jump_pressed = true
+					queue_redraw()
+				elif interact_area.has_point(touch_pos) and interact_touch_index == -1:
+					interact_touch_index = event.index
+					interact_pressed = true
+					queue_redraw()
 		else:
 			# 触摸结束
 			if event.index == jump_touch_index:
@@ -74,28 +107,6 @@ func _gui_input(event):
 				interact_touch_index = -1
 				interact_pressed = false
 				queue_redraw()
-
-func _process(_delta):
-	# 计算按钮区域 (相对于右下角)
-	var screen_size = get_viewport().get_visible_rect().size
-	var right = screen_size.x - 20
-	var bottom = screen_size.y - 20
-	
-	jump_area = Rect2(
-		right - button_size.x * 2 - button_spacing,
-		bottom - button_size.y,
-		button_size.x,
-		button_size.y
-	)
-	
-	interact_area = Rect2(
-		right - button_size.x,
-		bottom - button_size.y * 2 - button_spacing,
-		button_size.x,
-		button_size.y
-	)
-	
-	queue_redraw()
 
 func is_jump_pressed() -> bool:
 	return jump_pressed

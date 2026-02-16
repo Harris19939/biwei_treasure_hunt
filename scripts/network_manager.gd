@@ -15,6 +15,9 @@ signal connection_failed
 signal server_disconnected
 
 func _ready():
+    # 确保 multiplayer API 存在
+    if not multiplayer:
+        multiplayer = MultiplayerAPI.create_default()
     print("[NetworkManager] 初始化完成")
 
 # 创建主机
@@ -87,7 +90,9 @@ func _on_server_disconnected():
 
 # 获取当前玩家ID
 func get_player_id() -> int:
-    return multiplayer.get_unique_id()
+    if multiplayer:
+        return multiplayer.get_unique_id()
+    return 1  # 默认单机模式返回1
 
 # 是否是主机
 func is_host() -> bool:
