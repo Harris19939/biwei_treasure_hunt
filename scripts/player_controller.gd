@@ -26,14 +26,21 @@ var touch_interact_was_pressed: bool = false
 var use_touch_controls: bool = false
 
 func _ready():
+	# 安全获取相机节点
 	if is_local_player:
-		camera.current = true
+		camera = $Camera3D if has_node("Camera3D") else null
+		interaction_ray = $InteractionRay if has_node("InteractionRay") else null
+		
+		if camera:
+			camera.current = true
+		
 		# 检测是否为触屏设备
 		use_touch_controls = DisplayServer.is_touchscreen_available()
 		if use_touch_controls:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		
 		GameManager.register_player(player_id, self)
 
 func _physics_process(delta):
@@ -82,6 +89,10 @@ func _move_and_sync():
 		sync_position.rpc(global_position, rotation)
 
 func _handle_interaction():
+	# 安全检查
+	if not interaction_ray:
+		return
+		
 	# 键盘或触摸交互
 	var interact_pressed = Input.is_action_just_pressed("interact") or (touch_interact_pressed and not touch_interact_was_pressed)
 	if interact_pressed:
@@ -92,6 +103,10 @@ func _handle_interaction():
 
 func _input(event):
 	if not is_local_player:
+		return
+	
+	# 安全检查相机
+	if not camera:
 		return
 	
 	# 触摸模式不处理鼠标视角
@@ -113,6 +128,8 @@ func set_touch_input(action: String, value):
 
 # 处理触摸视角旋转
 func handle_touch_camera(horizontal: float, vertical: float):
+	if not camera:
+		return
 	rotate_y(horizontal)
 	camera.rotate_x(vertical)
 	camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
