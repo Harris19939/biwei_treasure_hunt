@@ -218,10 +218,12 @@ jobs:
           3. 点击安装（需允许未知来源）
 
           ### 更新日志
-          - 初始测试版本
+          - 修复摄像机视角问题
+          - 修复画面显示异常
           - Godot 4.2.2 构建
         draft: false
         prerelease: false
+        replace: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
