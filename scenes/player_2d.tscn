@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3 uid="uid://player_2d_001"]
+
+[ext_resource type="Script" path="res://scripts/player_2d.gd" id="1_player_2d"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="Player2D" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 7
+script = ExtResource("1_player_2d")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_player")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodyCircle" type="Polygon2D" parent="Visuals"]
+color = Color(0.2, 0.6, 0.8, 1)
+
+[node name="DirectionLine" type="Line2D" parent="Visuals"]
+points = [Vector2(0, 0), Vector2(0, -30)]
+default_color = Color(1, 1, 1, 0.8)
+width = 2.0

@@ -1,0 +1,128 @@
+[gd_scene load_steps=4 format=3 uid="uid://game_world_2d_001"]
+
+[ext_resource type="PackedScene" uid="uid://player_2d_001" path="res://scenes/player_2d.tscn" id="1_player_2d"]
+[ext_resource type="PackedScene" uid="uid://touch_controls" path="res://scenes/touch_controls.tscn" id="2_touch_controls"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(800, 600)
+
+[node name="GameWorld2D" type="Node2D"]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(400, 300)
+current = true
+
+[node name="Ground" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+position = Vector2(400, 300)
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="ColorRect" type="ColorRect" parent="Ground"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 792.0
+offset_bottom = 592.0
+color = Color(0.3, 0.5, 0.2, 1)
+
+[node name="BorderTop" type="StaticBody2D" parent="."]
+position = Vector2(400, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BorderTop"]
+position = Vector2(0, 5)
+shape = SubResource("RectangleShape2D_ground")
+shape.size = Vector2(800, 10)
+
+[node name="BorderBottom" type="StaticBody2D" parent="."]
+position = Vector2(400, 600)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BorderBottom"]
+position = Vector2(0, -5)
+shape = SubResource("RectangleShape2D_ground")
+shape.size = Vector2(800, 10)
+
+[node name="BorderLeft" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BorderLeft"]
+position = Vector2(5, 300)
+shape = SubResource("RectangleShape2D_ground")
+shape.size = Vector2(10, 600)
+
+[node name="BorderRight" type="StaticBody2D" parent="."]
+position = Vector2(795, 300)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BorderRight"]
+position = Vector2(-5, 0)
+shape = SubResource("RectangleShape2D_ground")
+shape.size = Vector2(10, 600)
+
+[node name="Items" type="Node2D" parent="."]
+
+[node name="SpawnPoints" type="Node2D" parent="."]
+
+[node name="SpawnA" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(100, 100)
+
+[node name="SpawnB" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(700, 100)
+
+[node name="SpawnC" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(100, 500)
+
+[node name="SpawnD" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(700, 500)
+
+[node name="ExtractionPoints" type="Node2D" parent="."]
+
+[node name="ExtractionA" type="Marker2D" parent="ExtractionPoints"]
+position = Vector2(50, 50)
+
+[node name="ExtractionB" type="Marker2D" parent="ExtractionPoints"]
+position = Vector2(750, 50)
+
+[node name="ExtractionC" type="Marker2D" parent="ExtractionPoints"]
+position = Vector2(50, 550)
+
+[node name="ExtractionD" type="Marker2D" parent="ExtractionPoints"]
+position = Vector2(750, 550)
+
+[node name="Player" parent="." instance=ExtResource("1_player_2d")]
+position = Vector2(400, 300)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TimerLabel" type="Label" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 20.0
+offset_right = 150.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 48
+text = "15:00"
+horizontal_alignment = 1
+
+[node name="HealthBar" type="ProgressBar" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -100.0
+offset_right = 280.0
+offset_bottom = -20.0
+grow_vertical = 0
+value = 100.0
+
+[node name="TouchControls" parent="." instance=ExtResource("2_touch_controls")]
